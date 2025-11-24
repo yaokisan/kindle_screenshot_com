@@ -1,0 +1,18 @@
+{
+  "captured_pages": 3,
+  "completed": true,
+  "pdf_path": "/Users/yaokikobayashi/ローカル開発/kindle_screenshot/Kindle_20251124_202349.pdf",
+  "settings": {
+    "window_title": "Kindle",
+    "window_id": 2345,
+    "direction": "RIGHT_TO_LEFT",
+    "wait_time": 1.2,
+    "similarity_threshold": 0.9,
+    "same_page_limit": 4,
+    "min_pages": 3,
+    "session_dir": "/Users/yaokikobayashi/ローカル開発/kindle_screenshot/sessions/20251124_202338",
+    "output_dir": "/Users/yaokikobayashi/ローカル開発/kindle_screenshot",
+    "pdf_quality": 95
+  },
+  "duration_sec": 12.73
+}

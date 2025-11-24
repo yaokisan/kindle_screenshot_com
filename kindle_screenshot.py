@@ -88,9 +88,7 @@ class CaptureSettings:
     window: KindleWindow
     direction: PageDirection
     wait_time: float
-    similarity_threshold: float
-    same_page_limit: int
-    min_pages: int
+    total_pages: int
     session_dir: Path
     output_dir: Path
     pdf_quality: int = 95
@@ -102,9 +100,7 @@ class CaptureSettings:
             "window_id": self.window.window_id,
             "direction": self.direction.name,
             "wait_time": self.wait_time,
-            "similarity_threshold": self.similarity_threshold,
-            "same_page_limit": self.same_page_limit,
-            "min_pages": self.min_pages,
+            "total_pages": self.total_pages,
             "session_dir": str(self.session_dir),
             "output_dir": str(self.output_dir),
             "pdf_quality": self.pdf_quality,
@@ -248,26 +244,12 @@ class ScreenshotSession:
                 screenshot_path.unlink(missing_ok=True)
                 return False, None
 
-            is_duplicate = False
-            if self.image_paths and len(self.image_paths) >= self.settings.min_pages:
-                similarity = structural_similarity(self.image_paths[-1], screenshot_path)
-                logger.debug("SSIM: %.4f", similarity)
-                if similarity >= self.settings.similarity_threshold:
-                    self.same_counter += 1
-                    is_duplicate = True
-                    self.progress_cb(len(self.image_paths), f"同一ページ判定 {self.same_counter}/{self.settings.same_page_limit}")
-                    screenshot_path.unlink(missing_ok=True)
-                    if self.same_counter >= self.settings.same_page_limit:
-                        completed = True
-                        break
-                else:
-                    self.same_counter = 0
-            else:
-                self.same_counter = 0
+            self.image_paths.append(screenshot_path)
+            self.progress_cb(len(self.image_paths), "撮影中")
 
-            if not is_duplicate:
-                self.image_paths.append(screenshot_path)
-                self.progress_cb(len(self.image_paths), "撮影中")
+            if len(self.image_paths) >= self.settings.total_pages:
+                completed = True
+                break
 
             if self.stop_check():
                 break
@@ -382,21 +364,12 @@ class MainWindow(QMainWindow):
         self.wait_spin.setRange(0.2, 5.0)
         self.wait_spin.setSingleStep(0.1)
         self.wait_spin.setValue(1.2)
-        self.threshold_spin = QDoubleSpinBox()
-        self.threshold_spin.setRange(0.5, 0.99)
-        self.threshold_spin.setSingleStep(0.01)
-        self.threshold_spin.setValue(0.9)
-        self.same_page_spin = QSpinBox()
-        self.same_page_spin.setRange(2, 10)
-        self.same_page_spin.setValue(4)
-        self.min_page_spin = QSpinBox()
-        self.min_page_spin.setRange(1, 10)
-        self.min_page_spin.setValue(3)
+        self.page_count_spin = QSpinBox()
+        self.page_count_spin.setRange(1, 10000)
+        self.page_count_spin.setValue(100)
         form.addRow("ページ方向", self.direction_combo)
         form.addRow("待機秒", self.wait_spin)
-        form.addRow("類似度閾値", self.threshold_spin)
-        form.addRow("終了判定回数", self.same_page_spin)
-        form.addRow("比較開始ページ", self.min_page_spin)
+        form.addRow("総ページ数", self.page_count_spin)
         config_group.setLayout(form)
 
         self.output_label = QLabel(str(DEFAULT_OUTPUT))
@@ -474,9 +447,7 @@ class MainWindow(QMainWindow):
             window=window,
             direction=direction,
             wait_time=self.wait_spin.value(),
-            similarity_threshold=self.threshold_spin.value(),
-            same_page_limit=self.same_page_spin.value(),
-            min_pages=self.min_page_spin.value(),
+            total_pages=self.page_count_spin.value(),
             session_dir=session_dir,
             output_dir=Path(self.output_label.text()),
         )
